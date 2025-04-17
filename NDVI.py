@@ -2,7 +2,7 @@ import os              #import os module to access files and folders
 import geopandas as gpd     #import geopandas to work with spatial data
 import rasterio as rio      #import rasterio to work with raster data
 import rasterio.merge       #import module to combine rasters
-import shapely              #import shapely module to work with geometries
+import shapely as shp             #import shapely module to work with geometries
 import pandas as pd         #import pandas module
 from sentinelsat import SentinelAPI, read_geojson, geojson_to_wkt
 from geopy import Point
@@ -36,9 +36,7 @@ p0 = p1     #set a p0 to close the polygon with the same coordinates as the star
 points = [(p.longitude, p.latitude) for p in [p1,p2,p3,p4, p0]]  #convert points to lat lon explicit to create polygon
 km_square = Polygon(points)                         #create polygon using the 4 corner points
 
-km_square_gdf=gpd.GeoDataFrame(geometry=[km_square], crs="EPSG:4326") #make polygon a geodataframe with crs
-aoi = km_square_gdf.to_json()
-
+aoi=shp.to_geojson(km_square)
 
 #search by polygon, time, and SciHub query keywords
 footprint = geojson_to_wkt(aoi)
