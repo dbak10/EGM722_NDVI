@@ -52,13 +52,11 @@ aoi=shp.to_geojson(km_square) #convert km_square to a geojson area of interest (
 aoi_wkt = shp.to_wkt(km_square)  #convert km_square to a wkt which is needed for the cdsetool area search
 
 #search copernicus data collection by polygon, time, sensor, level and cloud cover
-features = query_features("Sentinel2",{
+features = query_features("SENTINEL-2",{
     "startDate":start_date,
     "completionDate":end_date,
-    "cloudCover":"5",
-    "maxRecords":2,
     "geometry":aoi_wkt,
-    "processingLevel":"LEVEL2A"})
+    "processingLevel":"S2MSI2A"})
 
 
 
