@@ -10,13 +10,25 @@ from geopy.distance import distance
 import pyproj
 from shapely.geometry import Polygon
 import matplotlib as plt
+from cdsetool.query import query_features
+from cdsetool.credentials import Credentials
+from cdsetool.download import download_features
+from cdsetool.monitor import StatusMonitor
+from datetime import date
 
 
-api = SentinelAPI(None, None, 'https://apihub.copernicus.eu/apihub/')   #sentinelsat login access
+credentials = Credentials()   #cdsetool login access using .netrc file (must only contain the cdsetool login data
+
+
+
 print("enter start date in format yyyymmdd")
 start_date=input()        #set start date for image search user imput?
 print("enter end date in format yyyymmdd")
 end_date=input()          #set end date for image search user input?
+start_date = start_date[:4] + "-" + start_date[4:6] + "-" + start_date[6:] + "T00:00:00Z"
+end_date = end_date[:4] + "-" + end_date[4:6] + "-" + end_date[6:] + "T23:59:59Z"
+
+
 
 corner_grid=input("enter easting, northings for an OS 1km square e.g. 604000 279000").split()     #input of corner grid, split into list
 corner_grid_x= int(corner_grid[0]) #easting of corner grid
@@ -36,29 +48,17 @@ p0 = p1     #set a p0 to close the polygon with the same coordinates as the star
 points = [(p.longitude, p.latitude) for p in [p1,p2,p3,p4, p0]]  #convert points to lat lon explicit to create polygon
 km_square = Polygon(points)                         #create polygon using the 4 corner points
 
-aoi=shp.to_geojson(km_square)
+aoi=shp.to_geojson(km_square) #convert km_square to a geojson area of interest (not sure needed and this isn't a geojson but type str)
+aoi_wkt = shp.to_wkt(km_square)  #convert km_square to a wkt which is needed for the cdsetool area search
 
-#search by polygon, time, and SciHub query keywords
-footprint = geojson_to_wkt(aoi)
-products = api.query(footprint,
-                     date=(start_date, end_date), #start and end dates from user input variables
-                     platformname='Sentinel-2',   #limit to sentinel 2 multispectral sensor
-                     cloudcoverpercentage=(0, 15))  #limit cloud cover to 15% of image
+#search copernicus data collection by polygon, time, sensor, level and cloud cover
+features = query_features("Sentinel2",{
+    "startDate":start_date,
+    "completionDate":end_date,
+    "cloudCover":"5",
+    "maxRecords":2,
+    "geometry":aoi_wkt,
+    "processingLevel":"LEVEL2A"})
 
-# download all results from the search
-api.download_all(products)
-
-# convert to Pandas DataFrame
-products_df = api.to_dataframe(products)
-
-# GeoJSON FeatureCollection containing footprints and metadata of the scenes
-api.to_geojson(products)
-
-# GeoPandas GeoDataFrame with the metadata of the scenes and the footprints as geometries
-api.to_geodataframe(products)
-
-# Get basic information about the product: its title, file size, MD5 sum, date, footprint and
-# its download url
-#api.get_product_odata(<product_id>)
 
 
