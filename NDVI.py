@@ -51,7 +51,7 @@ km_square = Polygon(points)                         #create polygon using the 4 
 aoi=shp.to_geojson(km_square) #convert km_square to a geojson area of interest (not sure needed and this isn't a geojson but type str)
 aoi_wkt = shp.to_wkt(km_square)  #convert km_square to a wkt which is needed for the cdsetool area search
 
-#search copernicus data collection by polygon, time, sensor, level and cloud cover
+#search copernicus data collection by polygon, time, sensor, level 2 data
 features = query_features("SENTINEL-2",{
     "startDate":start_date,
     "completionDate":end_date,
