@@ -63,7 +63,8 @@ full_square_cover = []  #setup empty list for following loop
 for d in datasets:       #loop through datasets to filter for aoi total coverage
     datasets_str=json.dumps(d['geometry']) #convert geojson dictionary to str
     footprint = shp.from_geojson(datasets_str) #convert to shapely object
-    if footprint.contains(aoi_square):  #for loop to check area of interest against datasets for full coverage
+    cloudcover = d['properties']['cloudCover'] #find cloudcover from the properties in metedata
+    if footprint.contains(aoi_square) and cloudcover<=10:  #for loop to check area of interest against datasets for full spatial coverage and less than 10% cloudcover
         full_square_cover.append(d)     #appends any datasets the full_square_cover list
 
 print(full_square_cover[0:2])  #prints first 3 results
