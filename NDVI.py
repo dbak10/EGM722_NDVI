@@ -4,6 +4,7 @@ import rasterio as rio      #import rasterio to work with raster data
 import rasterio.merge       #import module to combine rasters
 import shapely as shp             #import shapely module to work with geometries
 import pandas as pd         #import pandas module
+import shapely.io
 from sentinelsat import SentinelAPI, read_geojson, geojson_to_wkt
 from geopy import Point
 from geopy.distance import distance
@@ -15,7 +16,7 @@ from cdsetool.credentials import Credentials
 from cdsetool.download import download_features
 from cdsetool.monitor import StatusMonitor
 from datetime import date
-
+import json
 
 credentials = Credentials()   #cdsetool login access using .netrc file (must only contain the cdsetool login data
 
@@ -46,17 +47,24 @@ p3 = distance(kilometers=1).destination((p2), bearing=90)   #set next corner loc
 p4 = distance(kilometers=1).destination((p3), bearing=180)   #set next corner location 1km South
 p0 = p1     #set a p0 to close the polygon with the same coordinates as the start point
 points = [(p.longitude, p.latitude) for p in [p1,p2,p3,p4, p0]]  #convert points to lat lon explicit to create polygon
-km_square = Polygon(points)                         #create polygon using the 4 corner points
+aoi_square = Polygon(points)                         #create polygon using the 4 corner points
 
-aoi=shp.to_geojson(km_square) #convert km_square to a geojson area of interest (not sure needed and this isn't a geojson but type str)
-aoi_wkt = shp.to_wkt(km_square)  #convert km_square to a wkt which is needed for the cdsetool area search
+aoi=shp.to_geojson(aoi_square) #convert km_square to a geojson area of interest (not sure needed and this isn't a geojson but type str)
+aoi_wkt = shp.to_wkt(aoi_square)  #convert km_square to a wkt which is needed for the cdsetool area search
 
 #search copernicus data collection by polygon, time, sensor, level 2 data
-features = query_features("SENTINEL-2",{
+datasets = query_features("SENTINEL-2",{
     "startDate":start_date,
     "completionDate":end_date,
     "geometry":aoi_wkt,
     "processingLevel":"S2MSI2A"})
 
+full_square_cover = []  #setup empty list for following loop
+for d in datasets:       #loop through datasets to filter for aoi total coverage
+    datasets_str=json.dumps(d['geometry']) #convert geojson dictionary to str
+    footprint = shp.from_geojson(datasets_str) #convert to shapely object
+    if footprint.contains(aoi_square):  #for loop to check area of interest against datasets for full coverage
+        full_square_cover.append(d)     #appends any datasets the full_square_cover list
 
-
+print(full_square_cover[0:2])  #prints first 3 results
+print(len(full_square_cover))  #prints number of filtered datasets that cover aoi
