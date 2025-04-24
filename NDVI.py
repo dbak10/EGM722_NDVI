@@ -5,7 +5,6 @@ import rasterio.merge       #import module to combine rasters
 import shapely as shp             #import shapely module to work with geometries
 import pandas as pd         #import pandas module
 import shapely.io
-from sentinelsat import SentinelAPI, read_geojson, geojson_to_wkt
 from geopy import Point
 from geopy.distance import distance
 import pyproj
@@ -15,15 +14,15 @@ from cdsetool.query import query_features
 from cdsetool.credentials import Credentials, validate_credentials
 from cdsetool.download import download_features
 from cdsetool.monitor import StatusMonitor
-from datetime import date
 import json
+import zipfile
 
 credentials = Credentials()   # cdsetool login access using .netrc file (must only contain the cdsetool login data)
 print(validate_credentials(username=None, password=None)) # validates credentials against .netrc
 
 
 print("enter start date in format yyyymmdd")
-start_date=input()        # set start date for image search user imput?
+start_date=input()        # set start date for image search user input?
 print("enter end date in format yyyymmdd")
 end_date=input()          # set end date for image search user input?
 start_date = start_date[:4] + "-" + start_date[4:6] + "-" + start_date[6:] + "T00:00:00Z" # reformat
@@ -75,8 +74,15 @@ selected_title=square_selected['properties']['title']  # find title of the selec
 sentinel_files_downloads='sentinel_files/' + selected_title   # creates a variable with name for the proposed directory
 os.makedirs(sentinel_files_downloads, exist_ok=True)   # makes a directory and checks if it already exists
 
-downloads = download_features([square_selected], sentinel_files_downloads, {"concurrency":1})
+# download files to directory
+downloads = list(download_features([square_selected], sentinel_files_downloads, {"concurrency":1}))
 for id in downloads:
     print(f"feature {id} downloaded")
 
 
+zipped_file=downloads[0]   # store location of downloaded zip
+unzipped_files = os.path.join("sentinel_unzipped", selected_title[0:20]) # create directory for unzipped files
+os.makedirs(unzipped_files, exist_ok=True)
+
+with zipfile.ZipFile(zipped_file, 'r') as zip_ref:   # extract zipped data
+    zip_ref.extractall(unzipped_files)
