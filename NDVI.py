@@ -17,6 +17,7 @@ from cdsetool.monitor import StatusMonitor
 import json
 import zipfile
 import glob
+import numpy as np
 
 credentials = Credentials()   # cdsetool login access using .netrc file (must only contain the cdsetool login data)
 print(validate_credentials(username=None, password=None)) # validates credentials against .netrc
@@ -94,5 +95,11 @@ B08_NIR=glob.glob(B08_path, recursive=True)
 B04_path="sentinel_unzipped/**/*B04_10m.jp2"  # find path for band 4 and store to Red variable
 B04_RED=glob.glob(B04_path, recursive=True)
 
-NIR= rio.open(B08_NIR[0])
-RED= rio.open(B04_RED[0])
+np.seterr(divide='ignore', invalid='ignore')  # allow division by zero (https://developers.planet.com/docs/planetschool/calculate-an-ndvi-in-python/)
+
+with rio.open(B08_NIR[0]) as band_NIR: #open with rasterio and convert to float
+    NIR=band_NIR.read(1).astype(float)
+with rio.open(B04_RED[0]) as band_RED:
+    RED=band_RED.read(1).astype(float)
+
+ndvi=(NIR- RED)/(NIR+RED)  # calculate ndvi 
