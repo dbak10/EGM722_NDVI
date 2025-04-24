@@ -63,7 +63,7 @@ full_square_cover = []  # setup empty list for following loop
 for d in datasets:  # loop through datasets to filter for aoi total coverage
     datasets_str=json.dumps(d['geometry'])  # convert geojson dictionary to str
     footprint = shp.from_geojson(datasets_str)  # convert to shapely object
-    cloudcover = d['properties']['cloudCover']  # find cloudcover from the properties in metedata
+    cloudcover = d['properties']['cloudCover']  # find cloudcover from the properties in metadata
     if footprint.contains(aoi_square) and cloudcover<=20:  # for loop to check area of interest against datasets for full spatial coverage and less than 10% cloudcover
         full_square_cover.append(d)     # appends any datasets the full_square_cover list
 
@@ -72,7 +72,11 @@ print(len(full_square_cover))  # prints number of filtered datasets that cover a
 
 square_selected = full_square_cover[0]  # selects first file from the list
 selected_title=square_selected['properties']['title']  # find title of the selected file from metadata
-sentinel_files='sentinel_files/' + selected_title   # creates a variable with name for the proposed directory
-os.makedirs(sentinel_files, exist_ok=True)   # makes a directory and checks if it already exists
-download_features(square_selected, sentinel_files)
+sentinel_files_downloads='sentinel_files/' + selected_title   # creates a variable with name for the proposed directory
+os.makedirs(sentinel_files_downloads, exist_ok=True)   # makes a directory and checks if it already exists
+
+downloads = download_features([square_selected], sentinel_files_downloads, {"concurrency":1})
+for id in downloads:
+    print(f"feature {id} downloaded")
+
 
