@@ -16,6 +16,7 @@ from cdsetool.download import download_features
 from cdsetool.monitor import StatusMonitor
 import json
 import zipfile
+import glob
 
 credentials = Credentials()   # cdsetool login access using .netrc file (must only contain the cdsetool login data)
 print(validate_credentials(username=None, password=None)) # validates credentials against .netrc
@@ -86,3 +87,12 @@ os.makedirs(unzipped_files, exist_ok=True)
 
 with zipfile.ZipFile(zipped_file, 'r') as zip_ref:   # extract zipped data
     zip_ref.extractall(unzipped_files)
+
+B08_path="sentinel_unzipped/**/*B08_10m.jp2"  # find path for band 8 and store to NIR variable
+B08_NIR=glob.glob(B08_path, recursive=True)
+
+B04_path="sentinel_unzipped/**/*B04_10m.jp2"  # find path for band 4 and store to Red variable
+B04_RED=glob.glob(B04_path, recursive=True)
+
+NIR= rio.open(B08_NIR[0])
+RED= rio.open(B04_RED[0])
