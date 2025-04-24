@@ -75,12 +75,12 @@ sentinel_files_downloads='sentinel_files/' + selected_title   # creates a variab
 os.makedirs(sentinel_files_downloads, exist_ok=True)   # makes a directory and checks if it already exists
 
 # download files to directory
-downloads = list(download_features([square_selected], sentinel_files_downloads, {"concurrency":1}))
+downloads = download_features([square_selected], sentinel_files_downloads, {"concurrency":1})
 for id in downloads:
     print(f"feature {id} downloaded")
 
 
-zipped_file=downloads[0]   # store location of downloaded zip
+zipped_file=zipped_file = os.path.join(sentinel_files_downloads, selected_title + ".zip")   # store location of downloaded zip
 unzipped_files = os.path.join("sentinel_unzipped", selected_title[0:20]) # create directory for unzipped files
 os.makedirs(unzipped_files, exist_ok=True)
 
