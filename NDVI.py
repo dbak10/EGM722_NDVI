@@ -100,12 +100,14 @@ np.seterr(divide='ignore', invalid='ignore')  # allow division by zero (https://
 
 
 
+aoi_projected=aoi_gdf.to_crs("EPSG:32630")  # reproject the area of interest to match the sentinel raster projection
+
 def band_processing(band_select, aoi_polygon):
     """
     opens the relevant band and masks to the area of interest, converts output to float type
     :param band_select: the chosen band (in this case NIR or RED)
     :param aoi_polygon: the area of interest, a 1km square
-    :return: the band from the sentinal image masked to the area of interest
+    :return: the band from the sentinel image masked to the area of interest with the affine transformation info
     """
 
     with rio.open(band_select) as band:
@@ -113,7 +115,9 @@ def band_processing(band_select, aoi_polygon):
         masked_band = masked_band[0].astype(float)
     return masked_band, out_transform
 
-NIR = band_processing(B08_NIR[0], aoi_square)
-RED = band_processing(B04_RED[0], aoi_square)
-ndvi=(NIR- RED)/(NIR+RED)  # calculate ndvi
+aoi_projected_geom = aoi_projected.geometry.iloc[0]  # access the single geometry in the gdf
+
+NIR, _ = band_processing(B08_NIR[0], aoi_projected_geom)
+RED, _ = band_processing(B04_RED[0], aoi_projected_geom)
+ndvi = np.where((NIR + RED) == 0, 0, (NIR - RED) / (NIR + RED))  # calculate ndvi, avoiding division of zeros
 
