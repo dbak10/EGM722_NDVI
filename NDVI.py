@@ -2,6 +2,7 @@ import os              #import os module to access files and folders
 import geopandas as gpd     #import geopandas to work with spatial data
 import rasterio as rio      #import rasterio to work with raster data
 import rasterio.merge       #import module to combine rasters
+from rasterio.mask import mask
 import shapely as shp             #import shapely module to work with geometries
 import pandas as pd         #import pandas module
 import shapely.io
@@ -97,9 +98,17 @@ B04_RED=glob.glob(B04_path, recursive=True)
 
 np.seterr(divide='ignore', invalid='ignore')  # allow division by zero (https://developers.planet.com/docs/planetschool/calculate-an-ndvi-in-python/)
 
-with rio.open(B08_NIR[0]) as band_NIR: #open with rasterio and convert to float
-    NIR=band_NIR.read(1).astype(float)
-with rio.open(B04_RED[0]) as band_RED:
-    RED=band_RED.read(1).astype(float)
+with rio.open(B08_NIR[0]) as band_NIR:  # open with rasterio and crop to the area of interest
+    NIR_masked, out_transform = mask(band_NIR, aoi_square, crop=True)
+    out_meta = band_NIR.meta
 
-ndvi=(NIR- RED)/(NIR+RED)  # calculate ndvi 
+NIR = NIR_masked[0].astype(float) # convert to float to allow decimals in the ndvi
+
+with rio.open(B04_RED[0]) as band_RED:  # open with rasterio and crop to the area of interest
+    RED_masked, out_transform = mask(band_RED, aoi_square, crop=True)
+    out_meta = band_RED.meta
+
+RED = RED_masked[0].astype(float) # convert to float to allow decimals in the ndvi
+
+ndvi=(NIR- RED)/(NIR+RED)  # calculate ndvi
+
