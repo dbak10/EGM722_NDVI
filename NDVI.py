@@ -117,7 +117,12 @@ def band_processing(band_select, aoi_polygon):
 
 aoi_projected_geom = aoi_projected.geometry.iloc[0]  # access the single geometry in the gdf
 
-NIR, _ = band_processing(B08_NIR[0], aoi_projected_geom)
+NIR, out_transform = band_processing(B08_NIR[0], aoi_projected_geom)
 RED, _ = band_processing(B04_RED[0], aoi_projected_geom)
 ndvi = np.where((NIR + RED) == 0, 0, (NIR - RED) / (NIR + RED))  # calculate ndvi, avoiding division of zeros
 
+ndvi_output="ndvi_output.tif"
+width, height=ndvi.shape
+
+with rasterio.open(ndvi_output, 'w', driver='GTiff', height=height, width=width, count=1, dtype='float64', crs="EPSG:32630",  transform=out_transform) as dst:
+    dst.write(ndvi,1)
