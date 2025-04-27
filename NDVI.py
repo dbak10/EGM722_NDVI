@@ -51,7 +51,7 @@ p0 = p1     # set a p0 to close the polygon with the same coordinates as the sta
 points = [(p.longitude, p.latitude) for p in [p1,p2,p3,p4, p0]]  # convert points to lat lon explicit to create polygon
 aoi_square = Polygon(points)                         # create polygon using the 4 corner points
 
-aoi=shp.to_geojson(aoi_square)  # convert km_square to a geojson area of interest (not sure needed and this isn't a geojson but type str)
+aoi_gdf = gpd.GeoDataFrame([{'geometry': aoi_square}], crs="EPSG:4326")
 aoi_wkt = shp.to_wkt(aoi_square)   # convert km_square to a wkt which is needed for the cdsetool area search
 
 #search copernicus data collection by polygon, time, sensor, level 2 data
@@ -98,17 +98,22 @@ B04_RED=glob.glob(B04_path, recursive=True)
 
 np.seterr(divide='ignore', invalid='ignore')  # allow division by zero (https://developers.planet.com/docs/planetschool/calculate-an-ndvi-in-python/)
 
-with rio.open(B08_NIR[0]) as band_NIR:  # open with rasterio and crop to the area of interest
-    NIR_masked, out_transform = mask(band_NIR, aoi_square, crop=True)
-    out_meta = band_NIR.meta
 
-NIR = NIR_masked[0].astype(float) # convert to float to allow decimals in the ndvi
 
-with rio.open(B04_RED[0]) as band_RED:  # open with rasterio and crop to the area of interest
-    RED_masked, out_transform = mask(band_RED, aoi_square, crop=True)
-    out_meta = band_RED.meta
+def band_processing(band_select, aoi_polygon):
+    """
+    opens the relevant band and masks to the area of interest, converts output to float type
+    :param band_select: the chosen band (in this case NIR or RED)
+    :param aoi_polygon: the area of interest, a 1km square
+    :return: the band from the sentinal image masked to the area of interest
+    """
 
-RED = RED_masked[0].astype(float) # convert to float to allow decimals in the ndvi
+    with rio.open(band_select) as band:
+        masked_band, out_transform = mask(band, [aoi_polygon], crop=True)
+        masked_band = masked_band[0].astype(float)
+    return masked_band, out_transform
 
+NIR = band_processing(B08_NIR[0], aoi_square)
+RED = band_processing(B04_RED[0], aoi_square)
 ndvi=(NIR- RED)/(NIR+RED)  # calculate ndvi
 
