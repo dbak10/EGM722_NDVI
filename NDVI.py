@@ -4,13 +4,10 @@ import rasterio as rio      #import rasterio to work with raster data
 import rasterio.merge       #import module to combine rasters
 from rasterio.mask import mask
 import shapely as shp             #import shapely module to work with geometries
-import pandas as pd         #import pandas module
-import shapely.io
 from geopy import Point
 from geopy.distance import distance
 import pyproj
 from shapely.geometry import Polygon
-import matplotlib as plt
 from cdsetool.query import query_features
 from cdsetool.credentials import Credentials, validate_credentials
 from cdsetool.download import download_features
