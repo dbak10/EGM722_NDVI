@@ -96,7 +96,8 @@ B08_NIR=glob.glob(B08_path, recursive=True)
 B04_path="sentinel_unzipped/**/*B04_10m.jp2"  # find path for band 4 and store to Red variable
 B04_RED=glob.glob(B04_path, recursive=True)
 
-np.seterr(divide='ignore', invalid='ignore')  # allow division by zero (https://developers.planet.com/docs/planetschool/calculate-an-ndvi-in-python/)
+# taken from (https://developers.planet.com/docs/planetschool/calculate-an-ndvi-in-python/)
+np.seterr(divide='ignore', invalid='ignore')  # allow division by zero
 
 aoi_projected=aoi_gdf.to_crs(crs_NDVI)  # reproject the area of interest to match the sentinel raster projection
 
@@ -119,7 +120,8 @@ NIR, out_transform = band_processing(B08_NIR[0], aoi_projected_geom)
 RED, _ = band_processing(B04_RED[0], aoi_projected_geom)
 ndvi = np.where((NIR + RED) == 0, 0, (NIR - RED) / (NIR + RED))  # calculate ndvi, avoiding division of zeros
 
-ndvi_output=f"ndvi_output_{corner_grid}.tif"  # set the
+# adapted this question: https://www.reddit.com/r/learnpython/comments/136yorw/using_fstrings_with_a_list/
+ndvi_output = f"ndvi_output_{'_'.join(corner_grid)}.tif"  # set the filename
 width, height=ndvi.shape  # set the height and width of the image to variables
 
 with rasterio.open(ndvi_output, 'w', driver='GTiff', height=height, width=width, count=1, dtype='float64', crs=crs_NDVI,  transform=out_transform) as dst:
@@ -140,7 +142,7 @@ ax.set_title('NDVI Map for 1Km Square')  # Add a title
 
 
 
-output_image_path = f"ndvi_{corner_grid}.png"  # save the output to a png image
+output_image_path = f"ndvi_{'_'.join(corner_grid)}.png"  # save the output to a png image
 plt.savefig(output_image_path, format='png', dpi=300, bbox_inches='tight')
 plt.close()  # close the plot
 print(f"Map saved as {output_image_path}")  # confirmatory statement of image output name'
