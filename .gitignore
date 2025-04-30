@@ -288,3 +288,9 @@ pyrightconfig.json
 
 # End of https://www.toptal.com/developers/gitignore/api/python,pycharm
 *.one
+
+sentinel_files/
+sentinel_unzipped/
+*.tif
+*.png
+*.zip
