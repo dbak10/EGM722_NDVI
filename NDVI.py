@@ -16,28 +16,30 @@ import zipfile
 import glob
 import numpy as np
 import matplotlib.pyplot as plt
+from pprint import pprint
 
 credentials = Credentials()   # cdsetool login access using .netrc file (must only contain the cdsetool login data)
 print(validate_credentials(username=None, password=None)) # validates credentials against .netrc
 
 
-print("enter search start date in format yyyymmdd")
+print("enter search start date in format yyyymmdd:")
 start_date=input()        # set start date for image search user input?
-print("enter search end date in format yyyymmdd")
+print("enter search end date in format yyyymmdd:")
 end_date=input()          # set end date for image search user input?
 start_date = start_date[:4] + "-" + start_date[4:6] + "-" + start_date[6:] + "T00:00:00Z" # reformat for sentinel search
 end_date = end_date[:4] + "-" + end_date[4:6] + "-" + end_date[6:] + "T23:59:59Z"
 
 
 
-corner_grid=input("enter easting, northings for an OS 1km square e.g. 604000 279000").split()  # input of corner grid, split into list
+corner_grid=input("enter easting, northings for an OS 1km square e.g. 604000 279000:").split()  # input of corner grid, split into list
 corner_grid_x= int(corner_grid[0])  # easting of corner grid
 corner_grid_y= int(corner_grid[1])  # northing of corner grid
+
+cloud_cover=int(input("enter a cloud cover threshold as a whole number e.g.20:"))
 
 crs_OS = pyproj.Proj(init='EPSG:27700')  # set variable with projected OS ctm
 crs_wgs84 = pyproj.Proj(init='EPSG:4326')  # set variable with lat long ctm
 corner_grid_lon_lat = pyproj.transform(crs_OS, crs_wgs84, corner_grid_x, corner_grid_y)  # convert corner grid inputs to long lat
-crs_NDVI="EPSG:32630"
 
 #create square polygon off corner grid reference
 p1= Point(corner_grid_lon_lat[1], corner_grid_lon_lat[0])  # set corner point in lat lon (reverse of transform)
@@ -63,11 +65,17 @@ for d in datasets:  # loop through datasets to filter for aoi total coverage
     datasets_str=json.dumps(d['geometry'])  # convert geojson dictionary to str
     footprint = shp.from_geojson(datasets_str)  # convert to shapely object
     cloudcover = d['properties']['cloudCover']  # find cloud cover from the properties in metadata
-    if footprint.contains(aoi_square) and cloudcover<=20:  # for loop to check area of interest against datasets for full spatial coverage and less than 10% cloudcover
+    if footprint.contains(aoi_square) and cloudcover<=cloud_cover:  # for loop to check area of interest against datasets for full spatial coverage and less than % cloudcover
         full_square_cover.append(d)     # appends any datasets the full_square_cover list
 
-print(full_square_cover[0:2])  # prints first 3 results
-print(len(full_square_cover))  # prints number of filtered datasets that cover aoi
+
+if len(full_square_cover)==0:
+    print("no suitable images were found, please adjust search attributes")
+    exit()
+print("these are the first 3 results:")
+pprint(full_square_cover[0:3])  # prints first 3 results
+print(f"there are: {len(full_square_cover)} results for that search")  # prints number of filtered datasets that cover aoi
+
 
 square_selected = full_square_cover[0]  # selects first file from the list
 selected_title=square_selected['properties']['title']  # find title of the selected file from metadata
@@ -96,6 +104,9 @@ B04_RED=glob.glob(B04_path, recursive=True)
 # taken from (https://developers.planet.com/docs/planetschool/calculate-an-ndvi-in-python/)
 np.seterr(divide='ignore', invalid='ignore')  # allow division by zero
 
+with rio.open(B08_NIR[0]) as setcrs: # sets the crs to that of the image
+    crs_NDVI=setcrs.crs
+
 aoi_projected=aoi_gdf.to_crs(crs_NDVI)  # reproject the area of interest to match the sentinel raster projection
 
 def band_processing(band_select, aoi_polygon):
@@ -119,7 +130,7 @@ ndvi = np.where((NIR + RED) == 0, 0, (NIR - RED) / (NIR + RED))  # calculate ndv
 
 # adapted this question: https://www.reddit.com/r/learnpython/comments/136yorw/using_fstrings_with_a_list/
 ndvi_output = f"ndvi_output_{'_'.join(corner_grid)}.tif"  # set the filename
-width, height=ndvi.shape  # set the height and width of the image to variables
+height, width=ndvi.shape  # set the height and width of the image to variables
 
 with rasterio.open(ndvi_output, 'w', driver='GTiff', height=height, width=width, count=1, dtype='float64', crs=crs_NDVI,  transform=out_transform) as dst:
     dst.write(ndvi,1)  # write the ndvi data to geotiff
@@ -142,4 +153,4 @@ ax.set_title('NDVI Map for 1Km Square')  # Add a title
 output_image_path = f"ndvi_{'_'.join(corner_grid)}.png"  # save the output to a png image
 plt.savefig(output_image_path, format='png', dpi=300, bbox_inches='tight')
 plt.close()  # close the plot
-print(f"Map saved as {output_image_path}")  # confirmatory statement of image output name'
+print(f"Map saved as {output_image_path}")  # confirmatory statement of image output name
