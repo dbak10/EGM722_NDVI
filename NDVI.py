@@ -1,22 +1,23 @@
-import os              #import os module to access files and folders
-import geopandas as gpd     #import geopandas to work with spatial data
-import rasterio as rio      #import rasterio to work with raster data
-import rasterio.merge       #import module to combine rasters
-from rasterio.mask import mask
-import shapely as shp             #import shapely module to work with geometries
-from geopy import Point
-from geopy.distance import distance
-import pyproj
-from shapely.geometry import Polygon
-from cdsetool.query import query_features
-from cdsetool.credentials import Credentials, validate_credentials
-from cdsetool.download import download_features
-import json
-import zipfile
-import glob
-import numpy as np
-import matplotlib.pyplot as plt
-from pprint import pprint
+import os              # import os module to access files and folders
+import geopandas as gpd     # import geopandas to work with spatial vector data (GeoDataFrames, shapefiles)
+import rasterio as rio      # import rasterio to work with raster data
+import rasterio.merge       # import rasterio.merge to mosaic (merge) multiple raster tiles
+from rasterio.mask import mask  # import mask function to clip rasters using vector geometries
+import shapely as shp             # import shapely module to work with geometric shapes
+from geopy import Point           # import Point from geopy to define lat/lon coordinates
+from geopy.distance import distance  # import distance to calculate distances
+import pyproj                    # import pyproj for coordinate reference system (CRS) transformations
+from shapely.geometry import Polygon  # import Polygon for constructing geometries
+from cdsetool.query import query_features  # import function to query Copernicus Data Space Ecosystem datasets
+from cdsetool.credentials import Credentials, validate_credentials  # import credential and validation for CDSE
+from cdsetool.download import download_features  # import function to download Copernicus datasets
+import json                     # import json to handle json formats
+import zipfile                  # import zipfile to unzip downloaded Sentinel data packages
+import glob                     # import glob to search for files
+import numpy as np              # import numpy for numerical operations
+import matplotlib.pyplot as plt # import matplotlib.pyplot to generate plots and visualizations
+from pprint import pprint       # import pprint to pretty print outputs
+import pandas as pd             # import pandas to create dataframe
 
 credentials = Credentials()   # cdsetool login access using .netrc file (must only contain the cdsetool login data)
 print(validate_credentials(username=None, password=None)) # validates credentials against .netrc
@@ -154,3 +155,22 @@ output_image_path = f"ndvi_{'_'.join(corner_grid)}.png"  # save the output to a 
 plt.savefig(output_image_path, format='png', dpi=300, bbox_inches='tight')
 plt.close()  # close the plot
 print(f"Map saved as {output_image_path}")  # confirmatory statement of image output name
+
+
+
+# adapted from https://www.geeksforgeeks.org/binning-data-in-python-with-scipy-numpy/?ref=asr19
+bin_edges = [0, 0.2, 0.4, 0.6, 0.8, 1.0] #set bin edges
+bin_labels= ['Bare or very low', 'Low or sparse', 'Moderately low', 'Moderately high', 'High' ]
+
+ndvi_1d = ndvi.flatten() # flatten ndvi array to one dimension
+
+# Calculate histogram counts using bin count
+hist, bins = np.histogram(ndvi_1d, bins=bin_edges)
+print("Bin edges:", bin_edges)
+print("Histogram Counts", hist)
+
+area_counts = hist * 100 # convert counts to area in meters squared
+
+# create a dataframe with the labels and areas
+area_table=pd.DataFrame({'NDVI Range': bin_labels, 'Area(m2)': area_counts})
+print(area_table)
